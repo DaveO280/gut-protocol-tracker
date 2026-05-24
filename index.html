@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<!-- Gut Protocol Tracker. Permanent URL: https://DaveO280.github.io/gut-protocol-tracker/ -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Gut Protocol">
+  <meta name="theme-color" content="#1a1a1a">
+  <link rel="manifest" href="manifest.json">
+  <title>Gut Protocol Tracker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+      padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+      max-width: 400px;
+      margin: 0 auto;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+    h1 { font-size: 24px; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #888; margin-bottom: 16px; }
+    .week-info {
+      background: #333;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .week-row { display: flex; justify-content: space-between; align-items: baseline; }
+    .week-row span:last-child { font-size: 12px; color: #888; }
+    .supplement {
+      background: #2a2a2a;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .supplement.taken { background: #1e3a1e; border: 1px solid #4a9; }
+    .checkbox {
+      flex-shrink: 0;
+      width: 30px;
+      height: 30px;
+      border: 2px solid #666;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .checkbox.checked { background: #4a9; border-color: #4a9; }
+    .checkbox.checked::after { content: "✓"; color: white; font-weight: bold; }
+    .dose { font-size: 12px; color: #888; margin-top: 5px; }
+    .timing { font-size: 11px; color: #4a9; margin-top: 2px; }
+    button {
+      background: #4a9;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 10px;
+      font-size: 16px;
+      width: 100%;
+      margin-top: 12px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    button.secondary { background: #666; }
+    button:disabled { opacity: 0.4; cursor: default; }
+    .progress {
+      background: #333;
+      height: 10px;
+      border-radius: 5px;
+      margin: 12px 0;
+      overflow: hidden;
+    }
+    .progress-bar {
+      background: linear-gradient(90deg, #4a9, #6c9);
+      height: 100%;
+      transition: width 0.3s;
+    }
+    #weekNotes { font-size: 14px; line-height: 1.4; color: #ccc; }
+    .stats { font-size: 12px; color: #888; margin-top: 8px; }
+    .all-done { color: #4a9; font-weight: 600; margin-top: 6px; font-size: 13px; }
+    .today-line { font-size: 13px; color: #aaa; margin-bottom: 6px; }
+    button.tertiary { background: #444; font-size: 14px; padding: 12px; margin-top: 8px; }
+    .view[hidden] { display: none !important; }
+    .history-day { background: #2a2a2a; border-radius: 10px; margin: 10px 0; overflow: hidden; }
+    .history-head {
+      padding: 14px 15px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .history-meta { flex: 1; min-width: 0; }
+    .history-date { font-size: 15px; font-weight: 600; }
+    .history-sub { font-size: 12px; color: #888; margin-top: 4px; }
+    .history-badge { font-size: 12px; font-weight: 600; color: #4a9; white-space: nowrap; }
+    .history-badge.partial { color: #aaa; }
+    .history-chevron { color: #666; font-size: 12px; margin-left: 6px; }
+    .history-day.open .history-chevron { transform: rotate(90deg); display: inline-block; }
+    .history-details { display: none; padding: 0 15px 12px; border-top: 1px solid #333; }
+    .history-day.open .history-details { display: block; }
+    .history-dose { font-size: 13px; padding: 7px 0; display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid #252525; }
+    .history-dose:last-child { border-bottom: none; }
+    .history-dose.done { color: #8fd4a8; }
+    .history-dose.missed { color: #666; }
+    .empty-history { color: #888; font-size: 14px; padding: 24px 0; text-align: center; line-height: 1.5; }
+    .dose-error { color: #e88; font-size: 13px; padding: 12px; background: #2a2020; border-radius: 8px; margin: 10px 0; line-height: 1.4; }
+    #jsErrorBanner { display: none; color: #fff; background: #a33; padding: 12px; margin-bottom: 12px; border-radius: 8px; font-size: 13px; line-height: 1.4; word-break: break-word; }
+    #mainView, #supplementList { overflow: visible; position: relative; }
+    #supplementList {
+      min-height: 48px;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+    }
+    #doseScheduleCount { font-size: 12px; color: #888; margin-top: 6px; }
+    #buildVersion { font-size: 11px; color: #666; margin-top: 4px; }
+    #jsFallback { padding: 14px; background: #2a2020; border: 1px solid #844; border-radius: 10px; margin: 10px 0; line-height: 1.5; font-size: 14px; }
+    #jsFallback strong { color: #faa; }
+    #jsFallback .fb-methods { margin-top: 10px; color: #ccc; font-size: 13px; }
+    #jsFallback .fb-methods p { margin: 8px 0 4px; }
+    #jsFallback .fb-methods ol { margin: 4px 0 8px 18px; padding: 0; }
+    #jsFallback .fb-methods li { margin: 4px 0; }
+    #jsFallback .fb-best { color: #8fd4a8; font-weight: 600; }
+    body[data-render-ok="1"] #jsFallback { display: none; }
+    .supplement {
+      min-height: 48px;
+      visibility: visible;
+      opacity: 1;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+    }
+    .supplement > div:first-child { flex: 1; min-width: 0; margin-right: 12px; }
+  </style>
+</head>
+<body>
+  <div id="jsErrorBanner" role="alert"></div>
+  <div id="mainView" class="view">
+  <h1 id="appTitle">🧬 Gut Protocol</h1>
+  <div class="subtitle" id="startInfo"></div>
+  <div id="buildVersion">v2026-05-21-se4</div>
+
+  <div class="week-info">
+    <div class="week-row">
+      <div>Week <span id="currentWeek">1</span> of 12</div>
+      <span id="weekMode"></span>
+    </div>
+    <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="today-line" id="todayLine"></div>
+    <div id="weekNotes"></div>
+    <div id="doseScheduleCount"></div>
+    <div class="stats" id="dayStats"></div>
+    <div class="all-done" id="allDone" hidden>✓ All doses done today</div>
+  </div>
+
+  <div id="jsFallback">
+    <strong>iPhone setup</strong>
+    <p style="margin-top:8px;color:#ccc;">A Mac IP bookmark <strong>stops working</strong> when the server is off. Use the permanent link below instead.</p>
+    <div class="fb-methods">
+      <p class="fb-best">Permanent URL (recommended — no Mac needed)</p>
+      <ol>
+        <li>iPhone <strong>Safari</strong> → open <code style="color:#adf;">https://DaveO280.github.io/gut-protocol-tracker/</code></li>
+        <li>Confirm build <strong>v2026-05-21-se4</strong> and dose list appear</li>
+        <li>Share → <strong>Add to Home Screen</strong></li>
+        <li>After one online visit, works <strong>offline</strong> (checkmarks saved on phone)</li>
+      </ol>
+      <p><strong>Delete old icons</strong> that point to a Mac IP (<code style="color:#adf;">192.168…</code>) or Files — they will break.</p>
+      <p><strong>Method D — Mac Wi‑Fi</strong> (temporary only)</p>
+      <ol>
+        <li>Mac: <code style="color:#adf;">cd /Users/dave/gut-protocol-tracker && python3 -m http.server 8765</code></li>
+        <li>iPhone Safari → <code style="color:#adf;">http://MAC_IP:8765/</code> — Mac must stay on</li>
+      </ol>
+      <p><strong>Other:</strong> AirDrop html · email attachment · Shortcuts → Open URL</p>
+    </div>
+    <p style="margin-top:8px;color:#888;font-size:12px;">Files preview cannot run this app. You must use Safari.</p>
+  </div>
+  <div id="supplementList"></div>
+
+  <button type="button" class="tertiary" id="historyBtn">History</button>
+  <button type="button" id="nextWeekBtn">Next Week →</button>
+  <button type="button" class="tertiary" id="clearTodayBtn">Clear today</button>
+  <button type="button" class="secondary" id="resetBtn">Reset all</button>
+  </div>
+
+  <div id="historyView" class="view" hidden>
+    <h1>History</h1>
+    <p class="subtitle">Past days with at least one check-in (newest first)</p>
+    <div id="historyList"></div>
+    <button type="button" class="secondary" id="backBtn">← Back to today</button>
+  </div>
+
+  <script>
+    (function() {
+    'use strict';
+
+    function showFatalError(msg) {
+      var banner = document.getElementById('jsErrorBanner');
+      if (banner) {
+        banner.style.display = 'block';
+        banner.textContent = msg;
+      }
+    }
+
+    function storageGet(key) {
+      try { return localStorage.getItem(key); } catch (e) { return null; }
+    }
+
+    function storageSet(key, val) {
+      try { localStorage.setItem(key, val); } catch (e) { /* file:// or private mode */ }
+    }
+
+    function storageRemove(key) {
+      try { localStorage.removeItem(key); } catch (e) { }
+    }
+
+    var PROTOCOL = {
+      "protocol": {
+        "title": "Gut Healing Protocol",
+        "startDate": "2026-05-20",
+        "supplements": {
+          "sbi": {"name": "SBI", "dose": "4g", "pmDose": "2g", "unit": "scoop"},
+          "glutamine": {"name": "L-Glutamine", "dose": "5g", "unit": "scoop", "frequency": 2},
+          "zinc": {"name": "Zinc Carnosine", "dose": "75mg", "unit": "capsule", "maxFrequency": 2},
+          "berberine": {"name": "Berberine", "dose": "600mg", "unit": "capsule", "maxFrequency": 3},
+          "magnesium": {"name": "Magnesium Glycinate", "dose": "400mg", "unit": "capsule", "frequency": 1},
+          "cranberry": {"name": "Cranberry Extract", "dose": "500mg", "unit": "capsule", "startWeek": 6},
+          "molybdenum": {"name": "Molybdenum", "dose": "500mcg", "unit": "drop", "startWeek": 7},
+          "butyrate": {"name": "Butyrate", "dose": "1g", "unit": "capsule", "startWeek": 8},
+          "hmo": {"name": "HMO (2'-FL)", "dose": "2g", "unit": "scoop", "startWeek": 9}
+        },
+        "schedule": [
+          {"week": 1, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium"], "berberineDoses": 2, "notes": "Baseline protocol"},
+          {"week": 2, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium"], "berberineDoses": 3, "notes": "Increase berberine to 3x daily"},
+          {"week": 3, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium"], "berberineDoses": 3, "notes": "Add evening SBI (2g) and second glutamine"},
+          {"week": 4, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Add evening zinc"},
+          {"week": 5, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Maintain"},
+          {"week": 6, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium", "cranberry"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Add cranberry for Akkermansia"},
+          {"week": 7, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium", "cranberry", "molybdenum"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Add molybdenum for sulfur metabolism"},
+          {"week": 8, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium", "cranberry", "molybdenum", "butyrate"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Add butyrate for colonocytes"},
+          {"week": 9, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium", "cranberry", "molybdenum", "butyrate", "hmo"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Add HMO for microbiome diversity"},
+          {"week": 10, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium", "cranberry", "molybdenum", "butyrate", "hmo"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Full protocol active"},
+          {"week": 11, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium", "cranberry", "molybdenum", "butyrate", "hmo"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Maintain full protocol"},
+          {"week": 12, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium", "cranberry", "molybdenum", "butyrate", "hmo"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Final week before retest"}
+        ]
+      }
+    };
+
+    var STORAGE = { week: 'gutWeek', weekManual: 'gutWeekManual', taken: 'gutTaken' };
+    var TOTAL_WEEKS = 12;
+    var DOSE_ORDER = [
+      'sbi_am', 'glut_am', 'moly_am', 'zinc_am',
+      'berb_am', 'berb_lunch', 'hmo_lunch',
+      'berb_pm', 'cran_pm', 'butyrate_pm', 'sbi_pm',
+      'glut_pm', 'zinc_pm', 'mag_pm'
+    ];
+
+    var TIMING = {
+      sbi_am: 'Empty stomach',
+      sbi_pm: 'With dinner',
+      glut_am: 'Empty stomach',
+      glut_pm: 'Evening',
+      zinc_am: 'With breakfast',
+      zinc_pm: 'With dinner',
+      berb_am: 'With breakfast',
+      berb_lunch: 'With lunch',
+      berb_pm: 'With dinner',
+      mag_pm: 'Evening',
+      cran_pm: 'With dinner',
+      moly_am: 'Morning',
+      butyrate_pm: 'With dinner',
+      hmo_lunch: 'With lunch'
+    };
+
+    var BUILD_VERSION = 'v2026-05-21-se4';
+    var PERMANENT_URL = 'https://DaveO280.github.io/gut-protocol-tracker/';
+    var protocol = PROTOCOL.protocol;
+    var supplements = protocol.supplements;
+
+    function hideFallback() {
+      document.body.setAttribute('data-render-ok', '1');
+      var fb = document.getElementById('jsFallback');
+      if (fb) fb.style.display = 'none';
+    }
+
+    function showFallback(msg) {
+      document.body.removeAttribute('data-render-ok');
+      var fb = document.getElementById('jsFallback');
+      if (fb) {
+        fb.style.display = 'block';
+        if (msg) {
+          var extra = fb.querySelector('.js-extra');
+          if (!extra) {
+            extra = document.createElement('p');
+            extra.className = 'js-extra';
+            extra.style.marginTop = '8px';
+            extra.style.color = '#e88';
+            fb.appendChild(extra);
+          }
+          extra.textContent = msg;
+        }
+      }
+    }
+
+    function safeWeekNum(w) {
+      var n = parseInt(w, 10);
+      if (isNaN(n) || n < 1) return 1;
+      if (n > TOTAL_WEEKS) return TOTAL_WEEKS;
+      return n;
+    }
+
+    function parseLocalDate(iso) {
+      var parts = String(iso).split('-');
+      var y = parseInt(parts[0], 10);
+      var m = parseInt(parts[1], 10);
+      var d = parseInt(parts[2], 10);
+      return new Date(y, m - 1, d);
+    }
+
+    function activeHas(activeList, id) {
+      for (var i = 0; i < activeList.length; i++) {
+        if (activeList[i] === id) return true;
+      }
+      return false;
+    }
+
+    function checkedHas(checkedList, key) {
+      for (var i = 0; i < checkedList.length; i++) {
+        if (checkedList[i] === key) return true;
+      }
+      return false;
+    }
+
+    function pad2(n) {
+      return (n < 10 ? '0' : '') + n;
+    }
+
+    function todayIsoFromDate(d) {
+      return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+    }
+
+    function todayIso() {
+      return todayIsoFromDate(new Date());
+    }
+
+    function formatDisplayDate(iso) {
+      try {
+        var d = parseLocalDate(iso);
+        return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      } catch (e) {
+        return iso;
+      }
+    }
+
+    function takenStorageKey(dateIso, week, doseKey) {
+      return dateIso + '|' + week + '|' + doseKey;
+    }
+
+    function loadTaken() {
+      var raw = {};
+      try { raw = JSON.parse(storageGet(STORAGE.taken) || '{}'); } catch (e) { raw = {}; }
+      var cleaned = {};
+      var keys = Object.keys(raw);
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (raw[k] && /^\d{4}-\d{2}-\d{2}\|\d+\|/.test(k)) cleaned[k] = true;
+      }
+      return cleaned;
+    }
+
+    function weekFromStartDate() {
+      var start = parseLocalDate(protocol.startDate);
+      var today = new Date();
+      start.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      if (isNaN(start.getTime()) || isNaN(today.getTime())) return 1;
+      var days = Math.floor((today.getTime() - start.getTime()) / 86400000);
+      if (isNaN(days)) return 1;
+      return safeWeekNum(Math.floor(days / 7) + 1);
+    }
+
+    function weekForDate(dateIso) {
+      var start = parseLocalDate(protocol.startDate);
+      var day = parseLocalDate(dateIso);
+      start.setHours(0, 0, 0, 0);
+      day.setHours(0, 0, 0, 0);
+      if (isNaN(start.getTime()) || isNaN(day.getTime())) return 1;
+      var days = Math.floor((day.getTime() - start.getTime()) / 86400000);
+      if (days < 0) return 1;
+      return safeWeekNum(Math.floor(days / 7) + 1);
+    }
+
+    function getScheduleWeek(n) {
+      var num = safeWeekNum(n);
+      var i, entry;
+      for (i = 0; i < protocol.schedule.length; i++) {
+        entry = protocol.schedule[i];
+        if (entry && entry.week === num) return entry;
+      }
+      entry = protocol.schedule[num - 1];
+      return entry || protocol.schedule[0];
+    }
+
+    function buildDoseInstances(weekEntry, weekNumOverride) {
+      if (!weekEntry) return [];
+      var keys = [];
+      var activeList = (weekEntry.active && weekEntry.active.length) ? weekEntry.active : [];
+      var berb = weekEntry.berberineDoses != null ? weekEntry.berberineDoses : 2;
+      var zincFreq = weekEntry.zincFrequency != null ? weekEntry.zincFrequency : 1;
+      var weekNum = weekNumOverride != null ? safeWeekNum(weekNumOverride) : safeWeekNum(weekEntry.week != null ? weekEntry.week : 1);
+      var phase2 = weekNum >= 3;
+
+      if (activeHas(activeList, 'sbi')) {
+        keys.push('sbi_am');
+        if (phase2) keys.push('sbi_pm');
+      }
+      if (activeHas(activeList, 'glutamine')) {
+        keys.push('glut_am');
+        if (phase2) keys.push('glut_pm');
+      }
+      if (activeHas(activeList, 'molybdenum')) keys.push('moly_am');
+      if (activeHas(activeList, 'zinc')) {
+        keys.push('zinc_am');
+        if (zincFreq >= 2) keys.push('zinc_pm');
+      }
+      if (activeHas(activeList, 'berberine')) {
+        keys.push('berb_am');
+        if (berb >= 3) keys.push('berb_lunch');
+        if (berb >= 2) keys.push('berb_pm');
+      }
+      if (activeHas(activeList, 'hmo')) keys.push('hmo_lunch');
+      if (activeHas(activeList, 'cranberry')) keys.push('cran_pm');
+      if (activeHas(activeList, 'butyrate')) keys.push('butyrate_pm');
+      if (activeHas(activeList, 'magnesium')) keys.push('mag_pm');
+
+      var orderIndex = {};
+      var i;
+      for (i = 0; i < DOSE_ORDER.length; i++) orderIndex[DOSE_ORDER[i]] = i;
+      return keys.sort(function(a, b) {
+        var ai = orderIndex[a] != null ? orderIndex[a] : 99;
+        var bi = orderIndex[b] != null ? orderIndex[b] : 99;
+        return ai - bi;
+      });
+    }
+
+    function doseForKey(key, weekEntry) {
+      var map = {
+        sbi_am: 'sbi', sbi_pm: 'sbi',
+        glut_am: 'glutamine', glut_pm: 'glutamine',
+        zinc_am: 'zinc', zinc_pm: 'zinc',
+        berb_am: 'berberine', berb_lunch: 'berberine', berb_pm: 'berberine',
+        mag_pm: 'magnesium',
+        cran_pm: 'cranberry',
+        moly_am: 'molybdenum',
+        butyrate_pm: 'butyrate',
+        hmo_lunch: 'hmo'
+      };
+      var id = map[key];
+      var supp = supplements[id];
+      if (!supp) return '';
+      if (key === 'sbi_am') return supp.dose;
+      if (key === 'sbi_pm') return supp.pmDose;
+      return supp.dose;
+    }
+
+    function nameForKey(key) {
+      var map = {
+        sbi_am: 'sbi', sbi_pm: 'sbi',
+        glut_am: 'glutamine', glut_pm: 'glutamine',
+        zinc_am: 'zinc', zinc_pm: 'zinc',
+        berb_am: 'berberine', berb_lunch: 'berberine', berb_pm: 'berberine',
+        mag_pm: 'magnesium',
+        cran_pm: 'cranberry',
+        moly_am: 'molybdenum',
+        butyrate_pm: 'butyrate',
+        hmo_lunch: 'hmo'
+      };
+      var supp = supplements[map[key]];
+      return supp ? supp.name : key;
+    }
+
+    function getCurrentWeek() {
+      if (storageGet(STORAGE.weekManual) === '1') {
+        var stored = parseInt(storageGet(STORAGE.week), 10);
+        if (!isNaN(stored)) return safeWeekNum(stored);
+      }
+      return weekFromStartDate();
+    }
+
+    var currentWeek = 1;
+    var taken = {};
+    var activeView = 'main';
+
+    function getHistoryDays() {
+      var byDate = {};
+      var takenKeys = Object.keys(taken);
+      var i, k, m, dateIso, weekStr, doseKey, dayObj, today;
+      for (i = 0; i < takenKeys.length; i++) {
+        k = takenKeys[i];
+        m = k.match(/^(\d{4}-\d{2}-\d{2})\|(\d+)\|(.+)$/);
+        if (!m) continue;
+        dateIso = m[1];
+        weekStr = m[2];
+        doseKey = m[3];
+        if (!byDate[dateIso]) {
+          byDate[dateIso] = { dateIso: dateIso, week: parseInt(weekStr, 10), checked: [] };
+        }
+        if (!checkedHas(byDate[dateIso].checked, doseKey)) {
+          byDate[dateIso].checked.push(doseKey);
+        }
+      }
+      today = todayIso();
+      var result = [];
+      for (dateIso in byDate) {
+        if (!byDate.hasOwnProperty(dateIso)) continue;
+        dayObj = byDate[dateIso];
+        if (dateIso !== today && dayObj.checked.length > 0) result.push(dayObj);
+      }
+      result.sort(function(a, b) {
+        if (a.dateIso < b.dateIso) return 1;
+        if (a.dateIso > b.dateIso) return -1;
+        return 0;
+      });
+      return result;
+    }
+
+    function getDaySummary(dateIso, week, checkedList) {
+      var weekEntry = getScheduleWeek(week);
+      var instances = buildDoseInstances(weekEntry, week);
+      var done = 0, j;
+      for (j = 0; j < instances.length; j++) {
+        if (checkedHas(checkedList, instances[j])) done++;
+      }
+      return {
+        instances: instances,
+        done: done,
+        total: instances.length,
+        complete: instances.length > 0 && done === instances.length
+      };
+    }
+
+    function setViewHidden(el, hide) {
+      if (!el) return;
+      if (hide) {
+        el.setAttribute('hidden', 'hidden');
+      } else {
+        el.removeAttribute('hidden');
+      }
+    }
+
+    function showView(view) {
+      activeView = view;
+      setViewHidden(document.getElementById('mainView'), view !== 'main');
+      setViewHidden(document.getElementById('historyView'), view !== 'history');
+      if (view === 'main') scheduleMainRender();
+      else renderHistory();
+    }
+
+    function renderHistory() {
+      taken = loadTaken();
+      var list = document.getElementById('historyList');
+      var days = getHistoryDays();
+      list.innerHTML = '';
+
+      if (days.length === 0) {
+        list.innerHTML = '<p class="empty-history">No past check-ins yet.<br>Checked doses will show here after tomorrow.</p>';
+        return;
+      }
+
+      days.forEach(function(day) {
+        var summary = getDaySummary(day.dateIso, day.week, day.checked);
+        var instances = summary.instances;
+        var done = summary.done;
+        var total = summary.total;
+        var complete = summary.complete;
+        var wrap = document.createElement('div');
+        wrap.className = 'history-day';
+
+        var badge = complete ? 'Complete' : (done + '/' + total + ' doses');
+        var label = formatDisplayDate(day.dateIso);
+
+        wrap.innerHTML =
+          '<div class="history-head">' +
+            '<div class="history-meta">' +
+              '<div class="history-date">' + label + '</div>' +
+              '<div class="history-sub">Week ' + day.week + '</div>' +
+            '</div>' +
+            '<div>' +
+              '<span class="history-badge' + (complete ? '' : ' partial') + '">' + badge + '</span>' +
+              '<span class="history-chevron">›</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="history-details"></div>';
+
+        var details = wrap.querySelector('.history-details');
+        instances.forEach(function(key) {
+          var checked = checkedHas(day.checked, key);
+          var row = document.createElement('div');
+          row.className = 'history-dose ' + (checked ? 'done' : 'missed');
+          row.innerHTML = '<span>' + nameForKey(key) + ' · ' + (TIMING[key] || '') + '</span><span>' + (checked ? '✓' : '—') + '</span>';
+          details.appendChild(row);
+        });
+
+        wrap.querySelector('.history-head').addEventListener('click', function() {
+          if (wrap.className.indexOf('open') >= 0) {
+            wrap.className = wrap.className.replace(' open', '');
+          } else {
+            wrap.className += ' open';
+          }
+        });
+        list.appendChild(wrap);
+      });
+    }
+
+    function isDayComplete(dateIso, week, instances) {
+      if (!instances.length) return false;
+      var i;
+      for (i = 0; i < instances.length; i++) {
+        if (!taken[takenStorageKey(dateIso, week, instances[i])]) return false;
+      }
+      return true;
+    }
+
+    function forceRepaint(el) {
+      if (!el) return;
+      void el.offsetHeight;
+    }
+
+    var mainRenderQueued = false;
+    var resizeTimer = null;
+
+    function scheduleMainRender() {
+      if (activeView !== 'main') return;
+      if (mainRenderQueued) return;
+      mainRenderQueued = true;
+      var run = function() {
+        mainRenderQueued = false;
+        render();
+      };
+      if (window.requestAnimationFrame) {
+        requestAnimationFrame(function() {
+          requestAnimationFrame(run);
+        });
+      } else {
+        setTimeout(run, 0);
+      }
+    }
+
+    function onViewportChange() {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(scheduleMainRender, 80);
+    }
+
+    function bindRepaintEvents() {
+      window.addEventListener('load', scheduleMainRender);
+      window.addEventListener('pageshow', function() { scheduleMainRender(); });
+      window.addEventListener('resize', onViewportChange);
+      window.addEventListener('orientationchange', function() {
+        setTimeout(scheduleMainRender, 150);
+      });
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) scheduleMainRender();
+      });
+    }
+
+    function computeStreak() {
+      var streak = 0;
+      var cursor = new Date();
+      var i, iso, week, instances;
+      for (i = 0; i < 400; i++) {
+        iso = todayIsoFromDate(cursor);
+        week = weekForDate(iso);
+        instances = buildDoseInstances(getScheduleWeek(week), week);
+        if (!isDayComplete(iso, week, instances)) break;
+        streak++;
+        cursor.setDate(cursor.getDate() - 1);
+      }
+      return streak;
+    }
+
+    function render() {
+      var today, weekEntry, instances, computed, isManual, protocolDay, list, done, i, key, isTaken, div, box, allDone, streak, stats;
+      try {
+        if (storageGet(STORAGE.weekManual) !== '1') {
+          currentWeek = weekFromStartDate();
+        }
+        currentWeek = safeWeekNum(currentWeek);
+
+        today = todayIso();
+        weekEntry = getScheduleWeek(currentWeek);
+        instances = buildDoseInstances(weekEntry, currentWeek);
+        computed = weekFromStartDate();
+        isManual = storageGet(STORAGE.weekManual) === '1';
+        protocolDay = Math.max(1, Math.floor((Date.now() - parseLocalDate(protocol.startDate).getTime()) / 86400000) + 1);
+
+        document.getElementById('appTitle').textContent = 'Gut Healing';
+        document.getElementById('buildVersion').textContent = BUILD_VERSION;
+        document.getElementById('startInfo').textContent =
+          'Started ' + protocol.startDate + ' · Protocol day ' + protocolDay;
+        document.getElementById('todayLine').textContent = 'Today: ' + formatDisplayDate(today);
+        document.getElementById('currentWeek').textContent = String(currentWeek);
+        document.getElementById('progressBar').style.width = (currentWeek / TOTAL_WEEKS * 100) + '%';
+        document.getElementById('weekNotes').textContent = weekEntry ? weekEntry.notes : '';
+        document.getElementById('weekMode').textContent = isManual
+          ? 'Manual week'
+          : (computed === currentWeek ? 'Auto from start date' : 'Calendar: week ' + computed);
+
+        list = document.getElementById('supplementList');
+        if (!list) return;
+        list.innerHTML = '';
+        done = 0;
+
+        document.getElementById('doseScheduleCount').textContent =
+          instances.length ? (instances.length + ' doses scheduled') : '';
+
+        if (!instances.length) {
+          list.innerHTML = '<p class="dose-error">No doses for week ' + currentWeek + '. Try Reset all or re-add this file to your home screen.</p>';
+          showFallback('Loaded but 0 doses for week ' + currentWeek);
+        } else {
+          var frag = document.createDocumentFragment();
+          for (i = 0; i < instances.length; i++) {
+            key = instances[i];
+            isTaken = !!taken[takenStorageKey(today, currentWeek, key)];
+            if (isTaken) done++;
+
+            div = document.createElement('div');
+            div.className = 'supplement' + (isTaken ? ' taken' : '');
+            div.innerHTML =
+              '<div>' +
+                '<div>' + nameForKey(key) + '</div>' +
+                '<div class="dose">' + doseForKey(key, weekEntry) + '</div>' +
+                '<div class="timing">' + (TIMING[key] || '') + '</div>' +
+              '</div>' +
+              '<div class="checkbox' + (isTaken ? ' checked' : '') + '" role="checkbox" tabindex="0" data-key="' + key + '"></div>';
+
+            box = div.querySelector('.checkbox');
+            (function(doseKey, checkboxEl) {
+              checkboxEl.addEventListener('click', function() { toggle(doseKey); });
+            })(key, box);
+            frag.appendChild(div);
+          }
+          list.appendChild(frag);
+          forceRepaint(list);
+          hideFallback();
+        }
+
+        allDone = instances.length > 0 && done === instances.length;
+        streak = 0;
+        try { streak = computeStreak(); } catch (e2) { }
+        stats = done + ' of ' + instances.length + ' taken today';
+        if (streak > 0 && (streak > 1 || allDone)) stats += ' · ' + streak + '-day streak';
+        document.getElementById('dayStats').textContent = stats;
+        setViewHidden(document.getElementById('allDone'), !allDone);
+        document.getElementById('nextWeekBtn').disabled = currentWeek >= TOTAL_WEEKS;
+      } catch (err) {
+        list = document.getElementById('supplementList');
+        if (list) {
+          list.innerHTML = '<p class="dose-error">Error loading doses (week ' + currentWeek + '): ' + (err.message || err) + '</p>';
+        }
+        showFatalError('App error: ' + (err.message || err));
+        showFallback('Error: ' + (err.message || err));
+      }
+    }
+
+    function toggle(key) {
+      var storageKey = takenStorageKey(todayIso(), currentWeek, key);
+      if (taken[storageKey]) delete taken[storageKey];
+      else taken[storageKey] = true;
+      storageSet(STORAGE.taken, JSON.stringify(taken));
+      if (activeView === 'main') render();
+      else renderHistory();
+    }
+
+    function nextWeek() {
+      if (currentWeek < TOTAL_WEEKS) {
+        currentWeek++;
+        storageSet(STORAGE.week, String(currentWeek));
+        storageSet(STORAGE.weekManual, '1');
+        render();
+      }
+    }
+
+    function clearToday() {
+      var today = todayIso();
+      var prefix = today + '|';
+      var changed = false;
+      var keys = Object.keys(taken);
+      var i, k;
+      for (i = 0; i < keys.length; i++) {
+        k = keys[i];
+        if (k.indexOf(prefix) === 0) { delete taken[k]; changed = true; }
+      }
+      if (changed) storageSet(STORAGE.taken, JSON.stringify(taken));
+      if (activeView === 'main') render();
+      else renderHistory();
+    }
+
+    function resetData() {
+      if (!confirm('Reset all clears every day\'s checkmarks (including history), removes manual week override, and returns to the calendar week. Continue?')) return;
+      storageRemove(STORAGE.week);
+      storageRemove(STORAGE.weekManual);
+      storageRemove(STORAGE.taken);
+      currentWeek = weekFromStartDate();
+      taken = {};
+      if (activeView === 'main') render();
+      else renderHistory();
+    }
+
+    function registerServiceWorker() {
+      if (!('serviceWorker' in navigator)) return;
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw.js').catch(function() { /* optional */ });
+      });
+    }
+
+    function init() {
+      try {
+        registerServiceWorker();
+        currentWeek = getCurrentWeek();
+        taken = loadTaken();
+        document.getElementById('historyBtn').addEventListener('click', function() { showView('history'); });
+        document.getElementById('backBtn').addEventListener('click', function() { showView('main'); });
+        document.getElementById('nextWeekBtn').addEventListener('click', nextWeek);
+        document.getElementById('clearTodayBtn').addEventListener('click', clearToday);
+        document.getElementById('resetBtn').addEventListener('click', resetData);
+        bindRepaintEvents();
+        scheduleMainRender();
+        setTimeout(function() {
+          if (document.body.getAttribute('data-render-ok') !== '1') {
+            showFallback('JavaScript did not finish loading. Open in Safari, not Files preview.');
+          }
+        }, 2500);
+      } catch (err) {
+        showFatalError('Failed to start: ' + (err.message || err));
+        showFallback('Failed to start: ' + (err.message || err));
+        currentWeek = 1;
+        try { scheduleMainRender(); } catch (e2) { }
+      }
+    }
+
+    try {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+      window.addEventListener('load', function() {
+        scheduleMainRender();
+      });
+    } catch (bootErr) {
+      showFatalError('Boot error: ' + (bootErr.message || bootErr));
+      showFallback('Boot error: ' + (bootErr.message || bootErr));
+    }
+
+    })();
+  </script>
+</body>
+</html>
