@@ -1,0 +1,31 @@
+{
+  "protocol": {
+    "title": "Gut Healing Protocol",
+    "startDate": "2026-05-20",
+    "supplements": {
+      "sbi": {"name": "SBI", "dose": "4g", "pmDose": "2g", "unit": "scoop"},
+      "glutamine": {"name": "L-Glutamine", "dose": "5g", "unit": "scoop", "frequency": 2},
+      "zinc": {"name": "Zinc Carnosine", "dose": "75mg", "unit": "capsule", "maxFrequency": 2},
+      "berberine": {"name": "Berberine", "dose": "600mg", "unit": "capsule", "maxFrequency": 3},
+      "magnesium": {"name": "Magnesium Glycinate", "dose": "400mg", "unit": "capsule", "frequency": 1},
+      "cranberry": {"name": "Cranberry Extract", "dose": "500mg", "unit": "capsule", "startWeek": 6},
+      "molybdenum": {"name": "Molybdenum", "dose": "500mcg", "unit": "drop", "startWeek": 7},
+      "butyrate": {"name": "Butyrate", "dose": "1g", "unit": "capsule", "startWeek": 8},
+      "hmo": {"name": "HMO (2'-FL)", "dose": "2g", "unit": "scoop", "startWeek": 9}
+    },
+    "schedule": [
+      {"week": 1, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium"], "berberineDoses": 2, "notes": "Baseline protocol"},
+      {"week": 2, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium"], "berberineDoses": 3, "notes": "Increase berberine to 3x daily"},
+      {"week": 3, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium"], "berberineDoses": 3, "notes": "Add evening SBI (2g) and second glutamine"},
+      {"week": 4, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Add evening zinc"},
+      {"week": 5, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Maintain"},
+      {"week": 6, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium", "cranberry"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Add cranberry for Akkermansia"},
+      {"week": 7, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium", "cranberry", "molybdenum"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Add molybdenum for sulfur metabolism"},
+      {"week": 8, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium", "cranberry", "molybdenum", "butyrate"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Add butyrate for colonocytes"},
+      {"week": 9, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium", "cranberry", "molybdenum", "butyrate", "hmo"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Add HMO for microbiome diversity"},
+      {"week": 10, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium", "cranberry", "molybdenum", "butyrate", "hmo"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Full protocol active"},
+      {"week": 11, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium", "cranberry", "molybdenum", "butyrate", "hmo"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Maintain full protocol"},
+      {"week": 12, "active": ["sbi", "glutamine", "zinc", "berberine", "magnesium", "cranberry", "molybdenum", "butyrate", "hmo"], "berberineDoses": 3, "zincFrequency": 2, "notes": "Final week before retest"}
+    ]
+  }
+}
