@@ -1,0 +1,10 @@
+{
+  "name": "Gut Protocol Tracker",
+  "short_name": "Gut Protocol",
+  "description": "Daily gut healing supplement tracker",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1a1a1a",
+  "orientation": "portrait"
+}
